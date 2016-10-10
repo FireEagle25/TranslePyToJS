@@ -28,7 +28,7 @@ class Lexer:
 
         9: [re.compile('^".*"$')],
 
-        10: [re.compile('^[a-zA-Z]+[a-zA-Z0-9]*$')],
+        10: [re.compile('^[a-zA-Z_]+[a-zA-Z0-9]*$')],
 
         11: [re.compile('^\s?$')],
 
