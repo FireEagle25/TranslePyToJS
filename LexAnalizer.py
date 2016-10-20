@@ -5,32 +5,37 @@ from Lex import Lex
 class Lexer:
 
     def __init__(self, filename):
-        self.work = True
-        self.file = open(filename, 'r')
-        self.ch_pos = 0
-        self.line = 1
-        self.next_ch()
-        self.new_lex()
+        self.filename = filename
+        self.clear()
 
-    def new_lex(self):
+    def __new_lex__(self):
         self.lex = Lex(line=self.line, pos=self.ch_pos)
 
-    def next_ch(self):
+    def __next_ch__(self):
         self.ch = self.file.read(1)
         self.ch_pos += 1
 
-    def print_lex(self):
-        self.work = self.lex.print()
-
-    def check_new_line(self):
+    def __check_new_line__(self):
 
         if self.ch == '\n':
-            self.next_ch()
+            self.lexs.append(self.lex)
+            self.__new_lex__()
+            self.__next_ch__()
             self.line += 1
             self.ch_pos = 1
             return True
 
         return False
+
+    def clear(self):
+        self.work = True
+        self.file = open(self.filename, 'r')
+        self.ch_pos = 0
+        self.line = 1
+
+        self.__next_ch__()
+        self.__new_lex__()
+        self.lexs = []
 
     def lex_analize(self):
 
@@ -39,7 +44,7 @@ class Lexer:
             if not self.work:
                 break
 
-            if self.check_new_line():
+            if self.__check_new_line__():
                 continue
 
             lex_bidder = self.lex.content + self.ch if self.lex.content else self.ch
@@ -47,12 +52,14 @@ class Lexer:
             lex_type = LexType.get_type(lex_bidder)
 
             if lex_type:
-                self.next_ch()
+                self.__next_ch__()
                 self.lex.change(lex_bidder)
             else:
-                self.print_lex()
-                self.new_lex()
+                self.lexs.append(self.lex)
+                self.__new_lex__()
+
+        return self.lexs
 
 
 lexer = Lexer("1.txt")
-lexer.lex_analize()
+print(lexer.lex_analize())
