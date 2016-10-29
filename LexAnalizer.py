@@ -18,12 +18,13 @@ class Lexer:
     def __check_new_line__(self):
 
         if self.ch == '\n':
+            self.line += 1
+            self.ch_pos = 1
+
             self.lexs.append(self.lex)
             self.lex.print()
             self.__new_lex__()
             self.__next_ch__()
-            self.line += 1
-            self.ch_pos = 1
             return True
 
         return False
