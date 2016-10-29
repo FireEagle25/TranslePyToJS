@@ -19,6 +19,7 @@ class Lexer:
 
         if self.ch == '\n':
             self.lexs.append(self.lex)
+            self.lex.print()
             self.__new_lex__()
             self.__next_ch__()
             self.line += 1
@@ -55,6 +56,7 @@ class Lexer:
                 self.__next_ch__()
                 self.lex.change(lex_bidder)
             else:
+                self.lex.print()
                 self.lexs.append(self.lex)
                 self.__new_lex__()
 
@@ -62,4 +64,4 @@ class Lexer:
 
 
 lexer = Lexer("1.txt")
-print(lexer.lex_analize())
+lexer.lex_analize()
