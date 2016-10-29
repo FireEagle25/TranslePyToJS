@@ -3,7 +3,6 @@ from Lex import Lex
 
 
 class Lexer:
-
     def __init__(self, filename):
         self.filename = filename
         self.clear()
@@ -20,9 +19,9 @@ class Lexer:
         if self.ch == '\n':
             self.line += 1
             self.ch_pos = 1
-
-            self.lexs.append(self.lex)
-            self.lex.print()
+            if self.lex.content:
+                self.lexs.append(self.lex)
+                self.lex.print()
             self.__new_lex__()
             self.__next_ch__()
             return True
