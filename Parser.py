@@ -5,74 +5,92 @@ class Parser:
         self.curr_lex_num = 1
         self.get_next_lex()
 
+    def get_lex(self, shift):
+        return self.lexs[self.curr_lex_num + shift]
+
     def get_next_lex(self):
         self.curr_lex_num += 1
         self.curr_lex = self.lexs[self.curr_lex_num]
 
-    def expression(self, content_variants, type):
-        if self.curr_lex.type == type:
+
+    # EXPRESSIONS
+
+
+    # mutual method
+    def expression(self, shift, content_variants=[], lex_type=None):
+
+        lex = self.get_lex(shift)
+
+        if lex.type == lex_type:
             for variant in content_variants:
-                if self.curr_lex.content == variant:
+                if lex.content == variant:
                     # Todo: добавить в дерево
-                    self.get_next_lex()
                     return True
         return False
 
-    def plus_ex(self):
-        return self.expression(["+"], "alg_ops")
+    def plus_ex(self, shift):
+        return self.expression(shift, ["+"], "alg_ops")
 
-    def if_ex(self):
-        return self.expression(["if"], "words")
+    def if_ex(self, shift):
+        return self.expression(shift, ["if"], "words")
 
-    def while_ex(self):
-        return self.expression(["while"], "words")
+    def while_ex(self, shift):
+        return self.expression(shift, ["while"], "words")
 
-    def double_dot(self):
-        return self.expression([":"], "spec_symbols")
+    def double_dot_ex(self, shift):
+        return self.expression(shift, [":"], "spec_symbols")
 
-    def assignment_op(self):
-        return self.expression(["="], "alg_ops")
+    def assignment_op_ex(self, shift):
+        return self.expression(shift, ["="], "alg_ops")
 
-    def elif_ex(self):
-        return self.expression(["elif"], "words")
+    def elif_ex(self, shift):
+        return self.expression(shift, ["elif"], "words")
 
-    def else_ex(self):
-        return self.expression(["else"], "words")
+    def else_ex(self, shift):
+        return self.expression(shift, ["else"], "words")
 
-    def closing_bracket(self):
-        return self.expression([")"], "brackets")
+    def closing_bracket_ex(self, shift):
+        return self.expression(shift, [")"], "brackets")
 
-    def opening_bracket(self):
-        return self.expression(["("], "brackets")
+    def opening_bracket_ex(self, shift):
+        return self.expression(shift, ["("], "brackets")
 
-    def bool_op_not(self):
-        return self.expression(["not"], "bool_op")
+    def bool_op_not_ex(self, shift):
+        return self.expression(shift, ["not"], "bool_op")
 
-    def comp_op(self):
-        return self.expression(["<", ">", ">=", "<=", "=="], "comp_op")
+    def comp_op(self, shift):
+        return self.expression(shift, ["<", ">", ">=", "<=", "=="], "comp_op")
 
-    def augassign(self):
-        return self.expression(["+=", "-=", "*=", "/="], "alg_ops")
+    def augassign_ex(self, shift):
+        return self.expression(shift, ["+=", "-=", "*=", "/="], "alg_ops")
 
-    def line_end(self):
-        #TODO: исправить хуету
-        if self.curr_lex.line != self.lexs[self.curr_lex_num + 1]:
-            return True
-        return False
+    def tab_ex(self, shift):
+        return self.expression(shift, ["\t"], "spec_symbols")
 
-    def tab(self):
-        return self.expression(["\t"], "spec_symbols")
 
-    def float(self):
-        if self.curr_lex.type == "float_num":
-            #TODO: Э, я не помню, что я тут хотел написать
-            return True
 
-        return False
+    #SIMPLE TYPES AND VARS
 
-    def int(self):
-        if self.curr_lex.type == "float_num":
-            #TODO: Э, я не помню, что я тут хотел написать
-            return True
 
-        return False
+    #mutual method
+    def type_or_var(self, shift, lex_type):
+        return self.get_lex(shift).type == lex_type
+
+    def float(self, shift):
+        return self.type_or_var(shift,"float_num")
+
+    def int(self, shift):
+        return self.type_or_var(shift,"num")
+
+    def string(self, shift):
+        return self.type_or_var(shift,"string")
+
+    def var_name(self, shift):
+        return self.type_or_var(shift,"var_name")
+
+
+    #COMPLEX SENTENCES
+
+
+    def bool(self, shift):
+        pass
