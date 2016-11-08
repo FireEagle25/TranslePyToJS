@@ -2,8 +2,8 @@ class Parser:
 
     def __init__(self, lexs):
         self.lexs = lexs
-        self.curr_lex_num = 1
-        self.get_next_lex()
+        self.curr_lex_num = 0
+        self.curr_lex = lexs[0]
 
     def get_lex(self, shift):
         return self.lexs[self.curr_lex_num + shift]
@@ -64,6 +64,9 @@ class Parser:
     def augassign_ex(self, shift):
         return self.expression(shift, ["+=", "-=", "*=", "/="], "alg_ops")
 
+    def arithmetic_operation(self, shift):
+        return self.expression(shift, ["+", "-", "*", "/"], "alg_ops")
+
     def tab_ex(self, shift):
         return self.expression(shift, ["\t"], "spec_symbols")
 
@@ -92,5 +95,48 @@ class Parser:
     #COMPLEX SENTENCES
 
 
-    def bool(self, shift):
-        pass
+    #num
+
+    def num(self, shift):
+
+        if self.int(shift) or self.float(shift) or self.var_name(shift):
+            print("чиселко")
+            num_op_num = self.num_op_num(shift + 1)
+            if num_op_num:
+                return num_op_num
+            else:
+                print("чиселко")
+                return shift + 1
+        else:
+            b_num = self.num_in_brackets(shift)
+            if b_num:
+                return self.num_op_num(b_num + 1)
+            else:
+                return "Ожидалось арифм. выражение"
+
+    def num_in_brackets(self, shift):
+
+        if self.opening_bracket_ex(shift):
+            print("открыли скобочку")
+            shift1 = self.num(shift + 1)
+            if shift1:
+                if self.closing_bracket_ex(shift1):
+                    print("закрыли скобку")
+                    return shift1
+                else:
+                    print("Ожидалось закрытие скобки")
+                    exit()
+            else:
+                print("Ожидалось логическое выражение")
+                exit()
+
+    def num_op_num(self, shift):
+
+        if len(self.lexs) < shift + 2 or self.get_lex(shift).line != self.get_lex(shift + 1).line:
+            return shift
+
+        if self.arithmetic_operation(shift):
+            print("плюсик")
+            return self.num(shift + 1)
+
+        return shift

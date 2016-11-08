@@ -14,14 +14,18 @@ class Lexer:
         self.ch = self.file.read(1)
         self.ch_pos += 1
 
+    def __append_lex__(self):
+        if self.lex.type != "space":
+            self.lex.print()
+            self.lexs.append(self.lex)
+
     def __check_new_line__(self):
 
         if self.ch == '\n':
             self.line += 1
             self.ch_pos = 1
             if self.lex.content:
-                self.lexs.append(self.lex)
-                self.lex.print()
+                self.__append_lex__()
             self.__new_lex__()
             self.__next_ch__()
             return True
@@ -56,10 +60,10 @@ class Lexer:
                 self.__next_ch__()
                 self.lex.change(lex_bidder)
             else:
-                self.lex.print()
-                self.lexs.append(self.lex)
+                self.__append_lex__()
                 self.__new_lex__()
 
+        self.__append_lex__()
         return self.lexs
 
 
