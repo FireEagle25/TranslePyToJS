@@ -1,17 +1,13 @@
+import inspect
+
 class Parser:
 
     def __init__(self, lexs):
         self.lexs = lexs
-        self.curr_lex_num = 0
-        self.curr_lex = lexs[0]
-        print(self.bool(0))
+        a = self.term(0)
 
     def get_lex(self, shift):
-        return self.lexs[self.curr_lex_num + shift]
-
-    def get_next_lex(self):
-        self.curr_lex_num += 1
-        self.curr_lex = self.lexs[self.curr_lex_num]
+        return self.lexs[shift]
 
 
     # EXPRESSIONS
@@ -104,13 +100,13 @@ class Parser:
 
     # mutual methods
 
-    def object_operation_object(self, shift, operation, general_method):
+    def operation_with_object(self, shift, operation, general_method):
 
         if len(self.lexs) < shift + 2 or self.get_lex(shift).line != self.get_lex(shift + 1).line:
             return shift
 
         if operation(shift):
-            print("+")
+            #print("+")
             return general_method(shift + 1)
 
         return shift
@@ -118,11 +114,11 @@ class Parser:
     def object_in_brackets(self, shift, general_method):
         #TODO: ошибки в аргументах
         if self.opening_bracket_ex(shift):
-            print("(")
+            #print("(")
             shift1 = general_method(shift + 1)
             if shift1:
                 if self.closing_bracket_ex(shift1):
-                    print(")")
+                    #print(")")
                     return shift1
                 else:
                     #TODO вывод ошибки
@@ -137,7 +133,6 @@ class Parser:
     def num(self, shift):
 
         if self.int(shift) or self.float(shift) or self.var_name(shift):
-            print("1")
             num_op_num = self.num_op_num(shift + 1)
             if num_op_num:
                 return num_op_num
@@ -148,6 +143,7 @@ class Parser:
             if num_in_brackets:
                 return self.num_op_num(num_in_brackets + 1)
             else:
+                print("Ожидалось арифм. выражение")
                 #TODO: добавить в список ошибок "Ожидалось арифм. выражение"
                 return False
 
@@ -155,7 +151,7 @@ class Parser:
         return self.object_in_brackets(shift, self.num)
 
     def num_op_num(self, shift):
-        return self.object_operation_object(shift, self.arithmetic_operation, self.num)
+        return self.operation_with_object(shift, self.arithmetic_operation, self.num)
 
 
     #bool
@@ -181,23 +177,25 @@ class Parser:
             if bool_in_brackets:
                 return self.bool_op_bool(bool_in_brackets + 1)
             elif num:
+                if len(self.lexs) < num + 2 or self.get_lex(shift).line != self.get_lex(shift + 1).line:
+                    return False
                 if self.comp_op(num):
                     return self.num(num + 1)
             else:
-                return "Ожидалось логическое выражение"
+                print("Ожидалось логическое выражение")
+                return False
 
     def bool_in_brackets(self, shift):
         return self.object_in_brackets(shift, self.bool)
 
     def bool_op_bool(self, shift):
-        return self.object_operation_object(shift, self.bool_operation, self.bool)
+        return self.operation_with_object(shift, self.bool_operation, self.bool)
 
 
     #string
 
     def string(self, shift):
         if self.string_const(shift) or self.var_name(shift):
-            print("1")
             str_op_str = self.str_op_str(shift + 1)
             if str_op_str:
                 return str_op_str
@@ -212,7 +210,33 @@ class Parser:
                 return False
 
     def str_op_str(self, shift):
-        return self.object_in_brackets(shift, self.string)
+        return self.operation_with_object(shift, self.plus_ex, self.string)
 
     def str_in_brackets(self, shift):
-        return self.object_operation_object(shift, self.plus_ex, self.string)
+        return self.object_in_brackets(shift, self.string)
+
+
+    #term
+
+    def term(self, shift):
+
+        str_item = self.string(shift)
+        num_item = self.num(shift)
+        bool_item = self.bool(shift)
+
+
+        if bool_item:
+            print("BOOL")
+            print(bool_item)
+            return bool_item
+        elif str_item:
+            print(str_item)
+            print("STR")
+            return str_item
+        elif num_item:
+            print("Num")
+            print(num_item)
+            return num_item
+        else:
+            return False
+
