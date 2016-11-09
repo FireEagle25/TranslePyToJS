@@ -1,4 +1,4 @@
-import inspect
+import Tools.Sorter
 
 class Parser:
 
@@ -162,6 +162,8 @@ class Parser:
             print("not")
             return self.bool(shift + 1)
 
+        #TODO: равноценные варианты для сравнения чисел и булевой операции
+
         if self.bool_const(shift) or self.var_name(shift):
             print("true")
             bool_op_bool = self.bool_op_bool(shift + 1)
@@ -220,23 +222,11 @@ class Parser:
 
     def term(self, shift):
 
-        str_item = self.string(shift)
-        num_item = self.num(shift)
-        bool_item = self.bool(shift)
+        str_item = ["str", self.string(shift)]
+        num_item = ["num", self.num(shift)]
+        bool_item = ["bool", self.bool(shift)]
 
+        max_term = Tools.Sorter.get_max([str_item, num_item, bool_item])
 
-        if bool_item:
-            print("BOOL")
-            print(bool_item)
-            return bool_item
-        elif str_item:
-            print(str_item)
-            print("STR")
-            return str_item
-        elif num_item:
-            print("Num")
-            print(num_item)
-            return num_item
-        else:
-            return False
-
+        print(max_term)
+        return max_term

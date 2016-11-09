@@ -1,5 +1,6 @@
-import LexType
-from LexError import LexError
+from Lexer.LexError import LexError
+
+from Lexer import LexType
 
 
 class Lex:

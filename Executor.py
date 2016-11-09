@@ -1,5 +1,5 @@
-from LexAnalizer import Lexer
-from Parser import Parser
+from Lexer.LexAnalizer import Lexer
+from Parser.Parser import Parser
 
 
 def main(argv=None):

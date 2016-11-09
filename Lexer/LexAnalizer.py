@@ -1,5 +1,6 @@
-import LexType
-from Lex import Lex
+from Lexer.Lex import Lex
+
+from Lexer import LexType
 
 
 class Lexer:
