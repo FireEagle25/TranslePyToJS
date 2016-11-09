@@ -65,7 +65,3 @@ class Lexer:
 
         self.__append_lex__()
         return self.lexs
-
-
-lexer = Lexer("1.txt")
-lexer.lex_analize()

@@ -4,6 +4,7 @@ class Parser:
         self.lexs = lexs
         self.curr_lex_num = 0
         self.curr_lex = lexs[0]
+        print(self.bool(0))
 
     def get_lex(self, shift):
         return self.lexs[self.curr_lex_num + shift]
@@ -67,6 +68,9 @@ class Parser:
     def arithmetic_operation(self, shift):
         return self.expression(shift, ["+", "-", "*", "/"], "alg_ops")
 
+    def bool_operation(self, shift):
+        return self.expression(shift, ["and", "or"], "bool_op")
+
     def tab_ex(self, shift):
         return self.expression(shift, ["\t"], "spec_symbols")
 
@@ -85,14 +89,47 @@ class Parser:
     def int(self, shift):
         return self.type_or_var(shift,"num")
 
-    def string(self, shift):
+    def string_const(self, shift):
         return self.type_or_var(shift,"string")
 
     def var_name(self, shift):
         return self.type_or_var(shift,"var_name")
 
+    def bool_const(self, shift):
+        return self.type_or_var(shift, "bools")
+
+
 
     #COMPLEX SENTENCES
+
+    # mutual methods
+
+    def object_operation_object(self, shift, operation, general_method):
+
+        if len(self.lexs) < shift + 2 or self.get_lex(shift).line != self.get_lex(shift + 1).line:
+            return shift
+
+        if operation(shift):
+            print("+")
+            return general_method(shift + 1)
+
+        return shift
+
+    def object_in_brackets(self, shift, general_method):
+        #TODO: ошибки в аргументах
+        if self.opening_bracket_ex(shift):
+            print("(")
+            shift1 = general_method(shift + 1)
+            if shift1:
+                if self.closing_bracket_ex(shift1):
+                    print(")")
+                    return shift1
+                else:
+                    #TODO вывод ошибки
+                    return False
+            else:
+                # TODO вывод ошибки
+                return False
 
 
     #num
@@ -100,43 +137,82 @@ class Parser:
     def num(self, shift):
 
         if self.int(shift) or self.float(shift) or self.var_name(shift):
-            print("чиселко")
+            print("1")
             num_op_num = self.num_op_num(shift + 1)
             if num_op_num:
                 return num_op_num
             else:
-                print("чиселко")
                 return shift + 1
         else:
-            b_num = self.num_in_brackets(shift)
-            if b_num:
-                return self.num_op_num(b_num + 1)
+            num_in_brackets = self.num_in_brackets(shift)
+            if num_in_brackets:
+                return self.num_op_num(num_in_brackets + 1)
             else:
-                return "Ожидалось арифм. выражение"
+                #TODO: добавить в список ошибок "Ожидалось арифм. выражение"
+                return False
 
     def num_in_brackets(self, shift):
-
-        if self.opening_bracket_ex(shift):
-            print("открыли скобочку")
-            shift1 = self.num(shift + 1)
-            if shift1:
-                if self.closing_bracket_ex(shift1):
-                    print("закрыли скобку")
-                    return shift1
-                else:
-                    print("Ожидалось закрытие скобки")
-                    exit()
-            else:
-                print("Ожидалось логическое выражение")
-                exit()
+        return self.object_in_brackets(shift, self.num)
 
     def num_op_num(self, shift):
+        return self.object_operation_object(shift, self.arithmetic_operation, self.num)
 
-        if len(self.lexs) < shift + 2 or self.get_lex(shift).line != self.get_lex(shift + 1).line:
-            return shift
 
-        if self.arithmetic_operation(shift):
-            print("плюсик")
-            return self.num(shift + 1)
+    #bool
 
-        return shift
+    def bool(self, shift):
+
+        if self.bool_op_not_ex(shift):
+            print("not")
+            return self.bool(shift + 1)
+
+        if self.bool_const(shift) or self.var_name(shift):
+            print("true")
+            bool_op_bool = self.bool_op_bool(shift + 1)
+            if bool_op_bool:
+                return bool_op_bool
+            else:
+                return shift + 1
+        else:
+            bool_in_brackets = self.bool_in_brackets(shift)
+
+            num = self.num(shift)
+
+            if bool_in_brackets:
+                return self.bool_op_bool(bool_in_brackets + 1)
+            elif num:
+                if self.comp_op(num):
+                    return self.num(num + 1)
+            else:
+                return "Ожидалось логическое выражение"
+
+    def bool_in_brackets(self, shift):
+        return self.object_in_brackets(shift, self.bool)
+
+    def bool_op_bool(self, shift):
+        return self.object_operation_object(shift, self.bool_operation, self.bool)
+
+
+    #string
+
+    def string(self, shift):
+        if self.string_const(shift) or self.var_name(shift):
+            print("1")
+            str_op_str = self.str_op_str(shift + 1)
+            if str_op_str:
+                return str_op_str
+            else:
+                return shift + 1
+        else:
+            str_in_brackets = self.str_in_brackets(shift)
+            if str_in_brackets:
+                return self.str_op_str(str_in_brackets + 1)
+            else:
+                #TODO: добавить в список ошибок "Ожидалось арифм. выражение"
+                return False
+
+    def str_op_str(self, shift):
+        return self.object_in_brackets(shift, self.string)
+
+    def str_in_brackets(self, shift):
+        return self.object_operation_object(shift, self.plus_ex, self.string)
