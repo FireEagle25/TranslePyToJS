@@ -1,12 +1,20 @@
-import Tools.Sorter
+from Lexer.Lex import Lex
+
 
 class Parser:
 
+    #TODO: для каждого возвращаемого False прописать тип ошибки
+
     def __init__(self, lexs):
         self.lexs = lexs
-        a = self.term(0)
+        a = self.expr(0)
+        print(a)
 
     def get_lex(self, shift):
+
+        if len(self.lexs) <= shift:
+            return Lex()
+
         return self.lexs[shift]
 
 
@@ -101,25 +109,18 @@ class Parser:
     # mutual methods
 
     def operation_with_object(self, shift, operation, general_method):
-
-        if len(self.lexs) < shift + 2 or self.get_lex(shift).line != self.get_lex(shift + 1).line:
-            return shift
-
         if operation(shift):
-            #print("+")
             return general_method(shift + 1)
-
-        return shift
+        else:
+            return shift
 
     def object_in_brackets(self, shift, general_method):
         #TODO: ошибки в аргументах
         if self.opening_bracket_ex(shift):
-            #print("(")
             shift1 = general_method(shift + 1)
             if shift1:
                 if self.closing_bracket_ex(shift1):
-                    #print(")")
-                    return shift1
+                    return shift1 + 1
                 else:
                     #TODO вывод ошибки
                     return False
@@ -141,7 +142,8 @@ class Parser:
         else:
             num_in_brackets = self.num_in_brackets(shift)
             if num_in_brackets:
-                return self.num_op_num(num_in_brackets + 1)
+                num_op_num = self.num_op_num(num_in_brackets)
+                return num_op_num if num_op_num else num_in_brackets
             else:
                 return False
 
@@ -157,7 +159,6 @@ class Parser:
     def bool(self, shift):
 
         if self.bool_op_not_ex(shift):
-            print("not")
             return self.bool(shift + 1)
 
         bool_length_variants = []
@@ -176,11 +177,10 @@ class Parser:
         num = self.num(shift)
 
         if bool_in_brackets:
-            return self.bool_op_bool(bool_in_brackets + 1)
+            return self.bool_op_bool(bool_in_brackets)
         elif num:
-            if len(self.lexs) >= num + 2:
-                if self.get_lex(shift).line != self.get_lex(shift + 1).line and self.comp_op(num):
-                    bool_length_variants.append(self.num(num + 1))
+            if self.comp_op(num):
+                bool_length_variants.append(self.bool_op_bool(self.num(num + 1)))
 
         if len(bool_length_variants) > 0:
             return max(bool_length_variants)
@@ -206,7 +206,7 @@ class Parser:
         else:
             str_in_brackets = self.str_in_brackets(shift)
             if str_in_brackets:
-                return self.str_op_str(str_in_brackets + 1)
+                return self.str_op_str(str_in_brackets)
             else:
                 return False
 
@@ -221,11 +221,39 @@ class Parser:
 
     def term(self, shift):
 
-        str_item = ["str", self.string(shift)]
-        num_item = ["num", self.num(shift)]
-        bool_item = ["bool", self.bool(shift)]
+        str_item = self.string(shift)
+        num_item = self.num(shift)
+        bool_item = self.bool(shift)
 
-        max_term = Tools.Sorter.get_max([str_item, num_item, bool_item])
+        max_term = max([str_item, num_item, bool_item])
 
-        print(max_term)
         return max_term
+
+
+    #id_with_assignment_op
+
+    def id_with_assignment_op(self, shift):
+
+        if self.var_name(shift):
+            if self.assignment_op_ex(shift + 1):
+                return shift + 2
+            else:
+                return False
+        else:
+            return False
+
+    #expr
+
+    def expr(self, shift):
+        id_with_assignment_op = self.id_with_assignment_op(shift)
+        term = self.term(shift)
+
+        if id_with_assignment_op:
+            inserted_term = self.term(id_with_assignment_op)
+            if inserted_term:
+                return inserted_term
+
+        if term:
+            return term
+
+        return False
