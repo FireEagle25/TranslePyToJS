@@ -143,8 +143,6 @@ class Parser:
             if num_in_brackets:
                 return self.num_op_num(num_in_brackets + 1)
             else:
-                print("Ожидалось арифм. выражение")
-                #TODO: добавить в список ошибок "Ожидалось арифм. выражение"
                 return False
 
     def num_in_brackets(self, shift):
@@ -162,30 +160,32 @@ class Parser:
             print("not")
             return self.bool(shift + 1)
 
-        #TODO: равноценные варианты для сравнения чисел и булевой операции
+        bool_length_variants = []
 
         if self.bool_const(shift) or self.var_name(shift):
-            print("true")
+
             bool_op_bool = self.bool_op_bool(shift + 1)
+
             if bool_op_bool:
-                return bool_op_bool
+                bool_length_variants.append(bool_op_bool)
             else:
-                return shift + 1
-        else:
-            bool_in_brackets = self.bool_in_brackets(shift)
+                bool_length_variants.append(shift + 1)
 
-            num = self.num(shift)
+        bool_in_brackets = self.bool_in_brackets(shift)
 
-            if bool_in_brackets:
-                return self.bool_op_bool(bool_in_brackets + 1)
-            elif num:
-                if len(self.lexs) < num + 2 or self.get_lex(shift).line != self.get_lex(shift + 1).line:
-                    return False
-                if self.comp_op(num):
-                    return self.num(num + 1)
-            else:
-                print("Ожидалось логическое выражение")
-                return False
+        num = self.num(shift)
+
+        if bool_in_brackets:
+            return self.bool_op_bool(bool_in_brackets + 1)
+        elif num:
+            if len(self.lexs) >= num + 2:
+                if self.get_lex(shift).line != self.get_lex(shift + 1).line and self.comp_op(num):
+                    bool_length_variants.append(self.num(num + 1))
+
+        if len(bool_length_variants) > 0:
+            return max(bool_length_variants)
+
+        return False
 
     def bool_in_brackets(self, shift):
         return self.object_in_brackets(shift, self.bool)
@@ -208,7 +208,6 @@ class Parser:
             if str_in_brackets:
                 return self.str_op_str(str_in_brackets + 1)
             else:
-                #TODO: добавить в список ошибок "Ожидалось арифм. выражение"
                 return False
 
     def str_op_str(self, shift):
