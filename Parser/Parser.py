@@ -345,7 +345,7 @@ class Parser:
         if len(bool_variants) > 0:
             max = 0
             for i in range(len(bool_variants)):
-                if bool_variants[max][0].DEPTH < bool_variants[i][0].DEPTH:
+                if bool_variants[max][1] < bool_variants[i][1]:
                     max = i
 
             return bool_variants[max][0], True, bool_variants[max][1]
@@ -441,14 +441,18 @@ class Parser:
         var_name = self.var_name(shift)
         if var_name[1]:
             assignment_op = self.assignment_op_ex(shift + 1)
-            if assignment_op[1]:
+            augassign_ex = self.augassign_ex(shift + 1)
+            if assignment_op[1] or augassign_ex[1]:
                 tree = Tree()
 
                 node_id = "id_with_assignment_op" + self.get_uniq_postfix()
                 tree.create_node("Id with assignment", node_id)
 
                 tree.paste(node_id, var_name[0])
-                tree.paste(node_id, assignment_op[0])
+                if assignment_op[1]:
+                    tree.paste(node_id, assignment_op[0])
+                else:
+                    tree.paste(node_id, augassign_ex[0])
 
                 #В отличие от других методов возвращает еще и node_id для удобного добавления в дерево
                 return tree, True, shift + 2, node_id
@@ -500,14 +504,16 @@ class Parser:
 
         if if_statement[1]:
             parse_res = True
-            elif_statement = self.word_with_bool(shift, tab_count, self.elif_ex, "Elif")
             curr_shift = if_statement[2]
+
+            elif_statement = self.word_with_bool(curr_shift, tab_count, self.elif_ex, "Elif")
 
             while elif_statement[1]:
                 curr_shift = elif_statement[2]
                 if_statement[0].paste(if_statement[3], elif_statement[0])
+                elif_statement = self.word_with_bool(curr_shift, tab_count, self.elif_ex, "Elif")
 
-            else_statement = self.word_with_bool(curr_shift, tab_count, self.else_ex, "Else")
+            else_statement = self.else_statement(curr_shift, tab_count)
 
             if else_statement[1]:
                 if_statement[0].paste(if_statement[3], else_statement[0])
@@ -515,6 +521,29 @@ class Parser:
 
 
         return if_statement[0], parse_res, curr_shift
+
+    #else
+
+    def else_statement(self, shift, tab_count):
+        tree = Tree()
+        node_id = "Else" + self.get_uniq_postfix()
+        tree.create_node("Else", node_id)
+
+        for i in range(shift, shift + tab_count):
+            if not self.tab_ex(i)[1]:
+                return tree, False
+
+        if self.else_ex(shift)[1]:
+            double_dot = self.double_dot_ex(shift+1)
+            if double_dot[1]:
+                statements = self.statements(shift + 2, tab_count + 1)
+                if statements[1]:
+                    tree.paste(node_id, statements[0])
+                    return tree, True, statements[2], node_id
+            else:
+                return tree, False, "Ожидалось двоеточие"
+        else:
+            return tree, False, "Ожидался else-блок"
 
     # statement
 
