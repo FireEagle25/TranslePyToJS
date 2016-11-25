@@ -6,14 +6,19 @@ class Parser:
     #TODO: для каждого возвращаемого False прописать тип ошибки
 
     def __init__(self, lexs):
-        self.tree = Tree()
-        self.tree.create_node(0, "root")
+
         self.lexs = lexs
+        self.clear()
 
+    def parse(self):
+        self.clear()
+
+        program = self.program()
+        print(program[0])
+
+    def clear(self):
         self.uniq_postfix = 0
-
-        a = self.expr(0)[0]
-        a.show()
+        self.tree = None
 
     def get_lex(self, shift):
 
@@ -128,7 +133,7 @@ class Parser:
 
     # mutual methods
 
-    def operation_with_object(self, shift, operation, general_method, node_name="Op_with_obj"):
+    def operation_with_object(self, shift, operation, general_method, node_name="op_with_obj"):
 
         op_res = operation(shift)
         tree = None
@@ -145,7 +150,7 @@ class Parser:
 
         return tree, tree is not None, returned_shift
 
-    def object_in_brackets(self, shift, general_method, node_name="Obj_in_brackets"):
+    def object_in_brackets(self, shift, general_method, node_name="obj_in_brackets"):
 
         tree = None
         bracket = self.opening_bracket_ex(shift)
@@ -170,6 +175,34 @@ class Parser:
             # TODO вывод ошибки
             return tree, False
 
+    def word_with_bool(self, shift, tab_count, word_func, node_name="word_with_bool"):
+
+        tree = Tree()
+        node_id = node_name + self.get_uniq_postfix()
+        tree.create_node(node_name, node_id)
+
+        for i in range(shift, shift + tab_count):
+            if not self.tab_ex(i)[1]:
+                return tree, False
+
+        word_ex = word_func(shift + tab_count)
+
+        if word_ex[1]:
+            bool_statement = self.bool(shift + tab_count + 1)
+            if bool_statement[1]:
+                double_dot = self.double_dot_ex(bool_statement[2])
+                if double_dot[1]:
+                    statements = self.statements(bool_statement[2] + 1, tab_count + 1)
+                    if statements[1]:
+                        tree.paste(node_id, bool_statement[0])
+                        tree.paste(node_id, statements[0])
+                        return tree, True, statements[2], node_id
+                else:
+                    return tree, False, "Ожадалось двоеточие"
+            else:
+                return tree, False, "Ожидалось " + node_name + " выражение"
+        else:
+            return tree, False, "Ожидалось " + node_name
 
     #num
 
@@ -395,8 +428,10 @@ class Parser:
         node_id = "Term" + self.get_uniq_postfix()
         tree.create_node("Term", node_id)
 
-        tree.paste(node_id, max_moved_item[0])
-        return tree, True, max_moved_item[2]
+        if max_moved_item != (None, False, 0):
+            tree.paste(node_id, max_moved_item[0])
+
+        return tree, max_moved_item != (None, False, 0), max_moved_item[2]
 
 
     #id_with_assignment_op
@@ -415,15 +450,21 @@ class Parser:
                 tree.paste(node_id, var_name[0])
                 tree.paste(node_id, assignment_op[0])
 
-                return tree, True, shift + 2
+                #В отличие от других методов возвращает еще и node_id для удобного добавления в дерево
+                return tree, True, shift + 2, node_id
 
         return tree, False
 
     #expr
 
-    def expr(self, shift):
-        id_with_assignment_op = self.id_with_assignment_op(shift)
-        term = self.term(shift)
+    def expr(self, shift, tab_count):
+
+        for i in range(shift, shift + tab_count):
+            if not self.tab_ex(i)[1]:
+                return None, False
+
+        id_with_assignment_op = self.id_with_assignment_op(shift + tab_count)
+        term = self.term(shift + tab_count)
 
         if id_with_assignment_op[1]:
             inserted_term = self.term(id_with_assignment_op[2])
@@ -436,7 +477,7 @@ class Parser:
                 tree.paste(node_id, inserted_term[0])
                 return tree, True, inserted_term[2]
 
-        if term:
+        if term[1]:
             tree = Tree()
             node_id = "Expr" + self.get_uniq_postfix()
             tree.create_node("Expression", node_id)
@@ -444,3 +485,78 @@ class Parser:
             return tree, True, term[2]
 
         return None, False
+
+    # while
+
+    def while_statement(self, shift, tab_count):
+        return self.word_with_bool(shift, tab_count, self.while_ex, "While")
+
+    # if_statement
+
+    def if_statement(self, shift, tab_count):
+        if_statement = self.word_with_bool(shift, tab_count, self.if_ex, "If")
+        parse_res = False
+        curr_shift = shift
+
+        if if_statement[1]:
+            parse_res = True
+            elif_statement = self.word_with_bool(shift, tab_count, self.elif_ex, "Elif")
+            curr_shift = if_statement[2]
+
+            while elif_statement[1]:
+                curr_shift = elif_statement[2]
+                if_statement[0].paste(if_statement[3], elif_statement[0])
+
+            else_statement = self.word_with_bool(curr_shift, tab_count, self.else_ex, "Else")
+
+            if else_statement[1]:
+                if_statement[0].paste(if_statement[3], else_statement[0])
+                curr_shift = else_statement[2]
+
+
+        return if_statement[0], parse_res, curr_shift
+
+    # statement
+
+    def statement(self, shift, tab_count):
+
+        if shift > len(self.lexs) - 1:
+            return None, False, "Ожидался оператор (if, while) или действие/присваивание"
+
+        if_statement = self.if_statement(shift, tab_count)
+        while_statement = self.while_statement(shift, tab_count)
+        expr = self.expr(shift, tab_count)
+
+        if if_statement[1]:
+            return if_statement
+        elif while_statement[1]:
+            return while_statement
+        elif expr[1]:
+            return expr
+        else:
+            return None, False, "Ожидался оператор (if, while) или действие/присваивание"
+
+    #statements
+
+    def statements(self, shift, tab_count):
+
+        tree = Tree()
+        res = False
+        curr_shift = shift
+
+        node_id = "Statements" + self.get_uniq_postfix()
+        tree.create_node("Statements", node_id)
+
+        statement = self.statement(shift, tab_count)
+
+        while statement[1]:
+            curr_shift = statement[2]
+            res = True
+            tree.paste(node_id, statement[0])
+            statement = self.statement(statement[2], tab_count)
+        return tree, res, curr_shift
+
+
+    #program
+    def program(self):
+        return self.statements(0, 0)

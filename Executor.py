@@ -6,6 +6,7 @@ def main(argv=None):
     file_name = "1.txt"
     lexs = Lexer(file_name).lex_analize()
     parser = Parser(lexs)
+    parser.parse()
 
 if __name__ == "__main__":
     main()

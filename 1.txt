@@ -1,1 +1,5 @@
-a + 8 < 7
+a = 1 < 2 or True
+if True:
+	a = False
+else True:
+	b += 1
