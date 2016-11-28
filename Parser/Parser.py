@@ -14,7 +14,8 @@ class Parser:
         self.clear()
 
         program = self.program()
-        print(program[0])
+        self.tree = program[0]
+        return self.tree
 
     def clear(self):
         self.uniq_postfix = 0
@@ -448,11 +449,9 @@ class Parser:
         node_id = "Term" + self.get_uniq_postfix()
         tree.create_node("Term", node_id)
 
-        if max_moved_item != (None, False, 0):
+        if max_moved_item[0]:
             tree.paste(node_id, max_moved_item[0])
 
-        if max_moved_item == (None, False, 0):
-            max_moved_item[2] = "Ждали терм"
         return tree, max_moved_item != (None, False, 0), max_moved_item[2]
 
 
@@ -597,16 +596,21 @@ class Parser:
         res = False
         curr_shift = shift
 
+        pos = 0
+
         node_id = "Statements" + self.get_uniq_postfix()
         tree.create_node("Statements", node_id)
 
         statement = self.statement(shift, tab_count)
 
         while statement[1]:
+            curr_stm_id = str(pos) + "_" + self.get_uniq_postfix()
+            tree.create_node(identifier=curr_stm_id, parent=node_id)
             curr_shift = statement[2]
             res = True
-            tree.paste(node_id, statement[0])
+            tree.paste(curr_stm_id, statement[0])
             statement = self.statement(statement[2], tab_count)
+            pos += 1
         return tree, res, curr_shift
 
 
@@ -616,17 +620,23 @@ class Parser:
         res = False
         curr_shift = 0
 
+        pos = 0
+
         node_id = "Statements" + self.get_uniq_postfix()
         tree.create_node("Statements", node_id)
 
         statement = self.statement(0, 0)
 
         while statement[1]:
+            curr_stm_id = str(pos) + "_" + self.get_uniq_postfix()
+            tree.create_node(identifier=curr_stm_id, parent=node_id)
             curr_shift = statement[2]
             res = True
-            tree.paste(node_id, statement[0])
+            tree.paste(curr_stm_id, statement[0])
             statement = self.statement(statement[2], 0)
+            pos += 1
             if not statement[1] and self.lattest_lex_num < len(self.lexs) - 1:
                 print(statement[2])
                 print(self.lattest_lex_num)
+
         return tree, res, curr_shift
