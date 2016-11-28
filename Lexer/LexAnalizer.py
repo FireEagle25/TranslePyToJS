@@ -45,6 +45,9 @@ class Lexer:
 
     def lex_analize(self):
 
+        if not self.ch:
+            return []
+
         while self.ch:
 
             if not self.work:
