@@ -16,7 +16,7 @@ class Lexer:
         self.ch_pos += 1
 
     def __append_lex__(self):
-        if self.lex.type != "space":
+        if self.lex.type != "space" and self.lex.content:
             self.lex.print()
             self.lexs.append(self.lex)
 
