@@ -3,8 +3,6 @@ from treelib import Node, Tree
 
 class Parser:
 
-    #TODO: для каждого возвращаемого False прописать тип ошибки
-
     def __init__(self, lexs):
 
         self.lexs = lexs
