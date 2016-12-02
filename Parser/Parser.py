@@ -36,6 +36,8 @@ class Parser:
         self.uniq_postfix += 1
         return str(self.uniq_postfix)
 
+
+
     # EXPRESSIONS
 
 
@@ -429,7 +431,6 @@ class Parser:
 
 
     #term
-
     def term(self, shift):
 
         str_item = self.string(shift)
@@ -452,11 +453,10 @@ class Parser:
         if max_moved_item[0]:
             tree.paste(node_id, max_moved_item[0])
 
-        return tree, max_moved_item != (None, False, 0), max_moved_item[2]
+        return tree, max_moved_item[0], max_moved_item[2]
 
 
     #id_with_assignment_op
-
     def id_with_assignment_op(self, shift):
         tree = None
         var_name = self.var_name(shift)
@@ -481,7 +481,6 @@ class Parser:
         return tree, False, "Ждали присваивания"
 
     #expr
-
     def expr(self, shift, tab_count):
 
         for i in range(shift, shift + tab_count):
@@ -512,12 +511,10 @@ class Parser:
         return None, False, "Ждали выражения"
 
     # while
-
     def while_statement(self, shift, tab_count):
         return self.word_with_bool(shift, tab_count, self.while_ex, "While")
 
     # if_statement
-
     def if_statement(self, shift, tab_count):
 
         if_statement = self.word_with_bool(shift, tab_count, self.if_ex, "If")
@@ -531,8 +528,14 @@ class Parser:
             elif_statement = self.word_with_bool(curr_shift, tab_count, self.elif_ex, "Elif")
 
             while elif_statement[1]:
+                #Вставка порядка
+                curr_elif_id = str(self.get_uniq_postfix())
+                root_elif_node = Node(tag=curr_elif_id, identifier=curr_elif_id)
+                if_statement[0].add_node(root_elif_node, if_statement[3])
                 curr_shift = elif_statement[2]
-                if_statement[0].paste(if_statement[3], elif_statement[0])
+                #Конец вставки порядка
+
+                if_statement[0].paste(curr_elif_id, elif_statement[0])
                 elif_statement = self.word_with_bool(curr_shift, tab_count, self.elif_ex, "Elif")
 
             else_statement = self.else_statement(curr_shift, tab_count)
@@ -546,7 +549,6 @@ class Parser:
         return if_statement[0], parse_res, curr_shift
 
     #else
-
     def else_statement(self, shift, tab_count):
         tree = Tree()
         node_id = "Else" + self.get_uniq_postfix()
@@ -563,13 +565,15 @@ class Parser:
                 if statements[1]:
                     tree.paste(node_id, statements[0])
                     return tree, True, statements[2], node_id
+                else:
+                    print("Ожидалось выражение")
+                    exit()
             else:
                 return tree, False, "Ожидалось двоеточие"
         else:
             return tree, False, "Ожидался else-блок"
 
     # statement
-
     def statement(self, shift, tab_count):
 
         if shift > len(self.lexs) - 1:
@@ -589,7 +593,6 @@ class Parser:
             return None, False, "Ожидался оператор (if, while) или действие/присваивание"
 
     #statements
-
     def statements(self, shift, tab_count):
 
         tree = Tree()
@@ -604,8 +607,9 @@ class Parser:
         statement = self.statement(shift, tab_count)
 
         while statement[1]:
-            curr_stm_id = str(pos) + "_" + self.get_uniq_postfix()
+            curr_stm_id = self.get_uniq_postfix()
             tree.create_node(identifier=curr_stm_id, parent=node_id)
+
             curr_shift = statement[2]
             res = True
             tree.paste(curr_stm_id, statement[0])
@@ -613,14 +617,11 @@ class Parser:
             pos += 1
         return tree, res, curr_shift
 
-
     #program
     def program(self):
         tree = Tree()
         res = False
         curr_shift = 0
-
-        pos = 0
 
         node_id = "Statements" + self.get_uniq_postfix()
         tree.create_node("Statements", node_id)
@@ -628,13 +629,12 @@ class Parser:
         statement = self.statement(0, 0)
 
         while statement[1]:
-            curr_stm_id = str(pos) + "_" + self.get_uniq_postfix()
+            curr_stm_id = self.get_uniq_postfix()
             tree.create_node(identifier=curr_stm_id, parent=node_id)
             curr_shift = statement[2]
             res = True
             tree.paste(curr_stm_id, statement[0])
             statement = self.statement(statement[2], 0)
-            pos += 1
             if not statement[1] and self.lattest_lex_num < len(self.lexs) - 1:
                 print(statement[2])
                 print(self.lattest_lex_num)
