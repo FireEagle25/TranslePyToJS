@@ -112,7 +112,9 @@ class Parser:
 
         if type_equality:
             tree = Tree()
-            tree.create_node(self.get_lex(shift).content, "type_or_var" + self.get_uniq_postfix(), data=shift)
+            root_node = lex_type + self.get_uniq_postfix()
+            tree.create_node(lex_type, root_node, data=shift)
+            tree.add_node(Node(tag=self.get_lex(shift).content, identifier="type_or_var" + self.get_uniq_postfix()), root_node)
 
         return tree, type_equality, shift + 1
 
@@ -152,9 +154,7 @@ class Parser:
                 tree.paste(node_id, gen_method_res[0])
                 returned_shift = gen_method_res[2]
             else:
-                print("Ожидался второй опперанд")
-                print("После "+str(self.get_lex(shift)))
-                exit()
+                return None, False, "Ожидался второй операнд после " + str(self.get_lex(shift+1))
 
         return tree, tree is not None, returned_shift
 
@@ -171,16 +171,14 @@ class Parser:
                     node_id = node_name + self.get_uniq_postfix()
                     tree.create_node(node_name, node_id)
                     tree.paste(node_id, gen_method_res[0])
-
                     return tree, True, gen_method_res[2] + 1
                 else:
-                    print("Ожидалась закрывающая скобка")
-                    print("После " + str(self.get_lex(gen_method_res[2] - 1)))
-                    exit()
+                    return None, False
             else:
                 print("Ожидалось внутреннее выражение")
                 print("После "+str(self.get_lex(shift)))
-                exit()
+                return None, False
+
         else:
             return tree, False, "Ожидалась открывающая скобка"
 
@@ -212,7 +210,7 @@ class Parser:
                         exit()
                 else:
                     print("Ожадалось двоеточие")
-                    print("После " + str(self.get_lex(shift + tab_count)))
+                    print("После " + str(self.get_lex(bool_statement[2]-1)))
                     exit()
             else:
                 print("Ожидалось булево выражение")
@@ -348,8 +346,10 @@ class Parser:
             tree.paste(node_id, bool_in_brackets[0])
 
             bool_op_bool = self.bool_op_bool(bool_in_brackets[2])
+
             if bool_op_bool[1]:
                 tree.paste(node_id, bool_op_bool[0])
+                return tree, True, bool_op_bool[2]
 
             return tree, True, bool_in_brackets[2]
         elif comp_op[1]:
@@ -450,6 +450,9 @@ class Parser:
 
         if max_moved_item[0]:
             tree.paste(node_id, max_moved_item[0])
+        else:
+            print("Ждали выражение после " + str(self.get_lex(shift)))
+            exit()
 
         return tree, max_moved_item[0], max_moved_item[2]
 
@@ -575,20 +578,24 @@ class Parser:
     def statement(self, shift, tab_count):
 
         if shift > len(self.lexs) - 1:
-            return None, False, "Ожидался оператор (if, while) или действие/присваивание"
+            return None, False
 
         if_statement = self.if_statement(shift, tab_count)
-        while_statement = self.while_statement(shift, tab_count)
-        expr = self.expr(shift, tab_count)
 
         if if_statement[1]:
             return if_statement
-        elif while_statement[1]:
+
+        while_statement = self.while_statement(shift, tab_count)
+
+        if while_statement[1]:
             return while_statement
-        elif expr[1]:
+
+        expr = self.expr(shift, tab_count)
+
+        if expr[1]:
             return expr
-        else:
-            return None, False, "Ожидался оператор (if, while) или действие/присваивание"
+
+        return None, False
 
     #statements
     def statements(self, shift, tab_count):
@@ -621,6 +628,7 @@ class Parser:
         res = False
         curr_shift = 0
 
+
         node_id = "Statements" + self.get_uniq_postfix()
         tree.create_node("Statements", node_id)
 
@@ -633,8 +641,11 @@ class Parser:
             res = True
             tree.paste(curr_stm_id, statement[0])
             statement = self.statement(statement[2], 0)
-            if not statement[1] and self.lattest_lex_num < len(self.lexs) - 1:
-                print(statement[2])
-                print(self.lattest_lex_num)
 
-        return tree, res, curr_shift
+            if not statement[1] and self.lattest_lex_num < len(self.lexs) - 1:
+                return tree, False
+
+        return tree, res
+
+#Служебные слова
+#Снос следующего выражения

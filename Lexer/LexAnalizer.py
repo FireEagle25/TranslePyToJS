@@ -16,8 +16,8 @@ class Lexer:
         self.ch_pos += 1
 
     def __append_lex__(self):
-        if self.lex.type != "space" and self.lex.content:
-            self.lex.print()
+        if self.lex.type != "space" and self.lex.content != "\n" and self.lex.content:
+            self.lex.check()
             self.lexs.append(self.lex)
 
     def __check_new_line__(self):

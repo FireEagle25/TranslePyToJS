@@ -23,7 +23,10 @@ class Lex:
         self.set_content(content)
 
     def print(self):
+        self.check()
+        print(self)
 
+    def check(self):
         if self.type is not None:
 
             if self.type == "string_start":
@@ -35,9 +38,8 @@ class Lex:
             elif self.type == "space":
                 pass
             else:
-                print(self)
+                return
         else:
             raise LexError("Ошибка, недопустимый символ, " + str(self.line))
-
     def __str__(self):
         return self.content + "|" + self.type + "|line:" + str(self.line) + "|lex_pos:" + str(self.pos)
