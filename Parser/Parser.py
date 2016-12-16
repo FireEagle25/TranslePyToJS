@@ -219,6 +219,15 @@ class Parser:
 
         return None, False
 
+    def ids_ops(self, shift):
+        bool_op = self.bool_operation(shift)
+        arith_op = self.arithmetic_operation(shift)
+
+        if bool_op[1]:
+            return bool_op
+
+        return arith_op
+
     #num
 
     def num(self, shift):
@@ -427,20 +436,66 @@ class Parser:
     def str_in_brackets(self, shift):
         return self.object_in_brackets(shift, self.string)
 
+    #id
+
+    def id(self, shift):
+        tree = None
+        var_name = self.var_name(shift)
+        if var_name[1]:
+
+            tree = Tree()
+            node_id = "Id" + self.get_uniq_postfix()
+            tree.create_node("Id", node_id)
+            tree.paste(node_id, var_name[0])
+
+            id_op_id = self.id_op_id(shift + 1)
+
+            if id_op_id[1]:
+                tree.paste(node_id, id_op_id[0])
+                print(tree)
+                return tree, True, id_op_id[2]
+            else:
+                print(tree)
+                return tree, True, shift + 1
+        else:
+            id_in_brackets = self.str_in_brackets(shift)
+            if id_in_brackets[1]:
+                id_op_id = self.str_op_str(id_in_brackets[2])
+
+                tree = Tree()
+                node_id = "Id" + self.get_uniq_postfix()
+                tree.create_node("Id", node_id)
+                tree.paste(node_id, id_in_brackets[0])
+
+                if id_op_id[1]:
+                    tree.paste(node_id, id_op_id[0])
+                print(tree)
+                return tree, True, id_op_id[2] if id_op_id[1] else id_in_brackets[2]
+            else:
+                print(tree)
+                return tree, False, "Ждали последовательность var'ов"
+
+    def id_in_brackets(self, shift):
+        return self.object_in_brackets(shift, self.id)
+
+    def id_op_id(self, shift):
+        return self.operation_with_object(shift, self.ids_ops, self.id)
+
 
     #term
     def term(self, shift):
 
         str_item = self.string(shift)
         num_item = self.num(shift)
+        ids = self.id(shift)
         bool_item = self.bool(shift)
         var_item = self.var_name(shift)
 
         max_moved_item = [None, False, 0]
 
-        for item in [var_item, str_item, num_item, bool_item]:
+        for item in [var_item, str_item, num_item, bool_item, ids]:
             if item[1]:
-                if max_moved_item[2] < item[2]:
+                if max_moved_item[2] <= item[2]:
                     max_moved_item = item
 
         tree = Tree()
