@@ -1,16 +1,31 @@
-from Lexer.LexAnalizer import Lexer
-from Parser.Parser import Parser
-from  Parser.SemanticAnalizer import SemanticAnalizer
+import sys
 
-def translate(filename):
-    file_name = filename
-    lexs = Lexer(file_name).lex_analize()
-    tree = Parser(lexs).parse()
-    print(tree)
-    sem_an = SemanticAnalizer(tree).start_anilize()
+from Lexer.LexAnalizer import Lexer as l
+from Parser.Parser import Parser as p
+from SemanticAnalizer.SemanticAnalizer import SemanticAnalizer as sa
+from CodeGenerator.CodeGenerator import CodeGenerator as cg
 
-def main(argv=None):
-    translate("1.txt")
+
+def translate(input, output):
+
+    lexs = l(input).lex_analize()
+
+    tree = p(lexs).parse()
+    sa(tree).anilize()
+
+    cg(tree).write_code_to_file(output)
+
+
+
+
+def main():
+
+    if len(sys.argv) < 3:
+        print("Необходимо ввести два имени файла: входной и выходной")
+        exit()
+
+    translate(sys.argv[1], sys.argv[2])
+
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,4 @@
 from Lexer.LexError import LexError
-
 from Lexer import LexType
 
 
@@ -41,5 +40,6 @@ class Lex:
                 return
         else:
             raise LexError("Ошибка, недопустимый символ, " + str(self.line))
+
     def __str__(self):
         return self.content + "|" + self.type + "|line:" + str(self.line) + "|lex_pos:" + str(self.pos)

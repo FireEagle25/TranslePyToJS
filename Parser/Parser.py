@@ -1,40 +1,41 @@
 from Lexer.Lex import Lex
 from treelib import Node, Tree
 
+
 class Parser:
+
+    __lexs = None
 
     def __init__(self, lexs):
 
-        self.lexs = lexs
+        self.__lexs = lexs
         self.clear()
 
     def parse(self):
         self.clear()
 
         program = self.program()
-        self.tree = program[0]
-        return self.tree
+        self.__tree = program[0]
+        return self.__tree
 
     def clear(self):
         self.uniq_postfix = 0
-        self.tree = None
+        self.__tree = None
         self.lattest_lex_num = 0
 
     def get_lex(self, shift):
 
-        if len(self.lexs) <= shift:
+        if len(self.__lexs) <= shift:
             return Lex()
         elif shift > self.lattest_lex_num:
             self.lattest_lex_num = shift
 
-        return self.lexs[shift]
+        return self.__lexs[shift]
 
     def get_uniq_postfix(self):
 
         self.uniq_postfix += 1
         return str(self.uniq_postfix)
-
-
 
     # EXPRESSIONS
 
@@ -99,12 +100,9 @@ class Parser:
     def tab_ex(self, shift):
         return self.expression(shift, ["\t"], "spec_symbols")
 
+    # SIMPLE TYPES AND VARS
 
-
-    #SIMPLE TYPES AND VARS
-
-
-    #mutual method
+    # mutual method
     def type_or_var(self, shift, lex_type):
 
         tree = None
@@ -114,28 +112,27 @@ class Parser:
             tree = Tree()
             root_node = lex_type + self.get_uniq_postfix()
             tree.create_node(lex_type, root_node, data=shift)
-            tree.add_node(Node(tag=self.get_lex(shift).content, identifier="type_or_var" + self.get_uniq_postfix()), root_node)
+            tree.add_node(Node(tag=self.get_lex(shift).content, identifier="type_or_var" + self.get_uniq_postfix()),
+                          root_node)
 
         return tree, type_equality, shift + 1
 
     def float(self, shift):
-        return self.type_or_var(shift,"float_num")
+        return self.type_or_var(shift, "float_num")
 
     def int(self, shift):
-        return self.type_or_var(shift,"num")
+        return self.type_or_var(shift, "num")
 
     def string_const(self, shift):
-        return self.type_or_var(shift,"string")
+        return self.type_or_var(shift, "string")
 
     def var_name(self, shift):
-        return self.type_or_var(shift,"var_name")
+        return self.type_or_var(shift, "var_name")
 
     def bool_const(self, shift):
         return self.type_or_var(shift, "bools")
 
-
-
-    #COMPLEX SENTENCES
+    # COMPLEX SENTENCES
 
     # mutual methods
 
@@ -154,7 +151,7 @@ class Parser:
                 tree.paste(node_id, gen_method_res[0])
                 returned_shift = gen_method_res[2]
             else:
-                return None, False, "Ожидался второй операнд после " + str(self.get_lex(shift+1))
+                return None, False, "Ожидался второй операнд после " + str(self.get_lex(shift + 1))
 
         return tree, tree is not None, returned_shift
 
@@ -176,7 +173,7 @@ class Parser:
                     return None, False
             else:
                 print("Ожидалось внутреннее выражение")
-                print("После "+str(self.get_lex(shift)))
+                print("После " + str(self.get_lex(shift)))
                 return None, False
 
         else:
@@ -210,7 +207,7 @@ class Parser:
                         exit()
                 else:
                     print("Ожадалось двоеточие")
-                    print("После " + str(self.get_lex(bool_statement[2]-1)))
+                    print("После " + str(self.get_lex(bool_statement[2] - 1)))
                     exit()
             else:
                 print("Ожидалось булево выражение")
@@ -228,7 +225,7 @@ class Parser:
 
         return arith_op
 
-    #num
+    # num
 
     def num(self, shift):
         tree = None
@@ -290,12 +287,22 @@ class Parser:
             if comp_op[1]:
                 num2 = self.num(num1[2] + 1)
                 if num2[1]:
-                    tree = num1[0]
+                    tree = Tree()
 
                     node_id = "comp nums" + self.get_uniq_postfix()
-                    tree.create_node("Compare nums", node_id, parent=tree.root)
-                    tree.paste(node_id, comp_op[0])
-                    tree.paste(node_id, num2[0])
+                    tree.create_node("Compare nums", node_id)
+
+                    first_operand = self.get_uniq_postfix()
+                    second_operand = self.get_uniq_postfix()
+                    op = "op" + self.get_uniq_postfix()
+
+                    tree.create_node(first_operand, first_operand, node_id)
+                    tree.create_node(second_operand, second_operand, node_id)
+                    tree.create_node("op", op, node_id)
+
+                    tree.paste(first_operand, num1[0])
+                    tree.paste(second_operand, num2[0])
+                    tree.paste(op, comp_op[0])
 
                     returned_shift = num2[2]
                 else:
@@ -305,8 +312,7 @@ class Parser:
 
         return tree, tree is not None, returned_shift
 
-
-    #bool
+    # bool
 
     def bool(self, shift):
 
@@ -316,7 +322,6 @@ class Parser:
         if bool_not_op[1]:
             bool_item = self.bool(shift + 1)
             if bool_item[1]:
-
                 tree = Tree()
                 tree.create_node("Bool", node_id)
                 tree.create_node(tag="not", parent=node_id, data=shift)
@@ -383,13 +388,12 @@ class Parser:
         return None, False, "Ждали буль"
 
     def bool_in_brackets(self, shift):
-        return self.object_in_brackets(shift, self.bool)
+        return self.object_in_brackets(shift, self.bool, "Bool in brackets")
 
     def bool_op_bool(self, shift):
-        return self.operation_with_object(shift, self.bool_operation, self.bool)
+        return self.operation_with_object(shift, self.bool_operation, self.bool, "Operation with bool")
 
-
-    #string
+    # string
 
     def string(self, shift):
         tree = None
@@ -431,12 +435,12 @@ class Parser:
                 return tree, False, "Ждали строку"
 
     def str_op_str(self, shift):
-        return self.operation_with_object(shift, self.plus_ex, self.string)
+        return self.operation_with_object(shift, self.plus_ex, self.string, "Operation with string")
 
     def str_in_brackets(self, shift):
-        return self.object_in_brackets(shift, self.string)
+        return self.object_in_brackets(shift, self.string, "String in brackets")
 
-    #id
+    # id
 
     def id(self, shift):
         tree = None
@@ -452,15 +456,13 @@ class Parser:
 
             if id_op_id[1]:
                 tree.paste(node_id, id_op_id[0])
-                print(tree)
                 return tree, True, id_op_id[2]
             else:
-                print(tree)
                 return tree, True, shift + 1
         else:
-            id_in_brackets = self.str_in_brackets(shift)
+            id_in_brackets = self.id_in_brackets(shift)
             if id_in_brackets[1]:
-                id_op_id = self.str_op_str(id_in_brackets[2])
+                id_op_id = self.id_op_id(id_in_brackets[2])
 
                 tree = Tree()
                 node_id = "Id" + self.get_uniq_postfix()
@@ -476,13 +478,12 @@ class Parser:
                 return tree, False, "Ждали последовательность var'ов"
 
     def id_in_brackets(self, shift):
-        return self.object_in_brackets(shift, self.id)
+        return self.object_in_brackets(shift, self.id, "Id in brackets")
 
     def id_op_id(self, shift):
-        return self.operation_with_object(shift, self.ids_ops, self.id)
+        return self.operation_with_object(shift, self.ids_ops, self.id, "Operation with id")
 
-
-    #term
+    # term
     def term(self, shift):
 
         str_item = self.string(shift)
@@ -493,7 +494,7 @@ class Parser:
 
         max_moved_item = [None, False, 0]
 
-        for item in [var_item, str_item, num_item, bool_item, ids]:
+        for item in (var_item, str_item, num_item, bool_item, ids):
             if item[1]:
                 if max_moved_item[2] <= item[2]:
                     max_moved_item = item
@@ -511,8 +512,7 @@ class Parser:
 
         return tree, max_moved_item[0], max_moved_item[2]
 
-
-    #id_with_assignment_op
+    # id_with_assignment_op
     def id_with_assignment_op(self, shift):
         tree = None
         var_name = self.var_name(shift)
@@ -531,12 +531,12 @@ class Parser:
                 else:
                     tree.paste(node_id, augassign_ex[0])
 
-                #В отличие от других методов возвращает еще и node_id для удобного добавления в дерево
+                # В отличие от других методов возвращает еще и node_id для удобного добавления в дерево
                 return tree, True, shift + 2, node_id
 
         return tree, False, "Ждали присваивания"
 
-    #expr
+    # expr
     def expr(self, shift, tab_count):
 
         for i in range(shift, shift + tab_count):
@@ -549,7 +549,6 @@ class Parser:
         if id_with_assignment_op[1]:
             inserted_term = self.term(id_with_assignment_op[2])
             if inserted_term[1]:
-
                 tree = Tree()
                 node_id = "Expr" + self.get_uniq_postfix()
                 tree.create_node("Expression", node_id)
@@ -584,12 +583,12 @@ class Parser:
             elif_statement = self.word_with_bool(curr_shift, tab_count, self.elif_ex, "Elif")
 
             while elif_statement[1]:
-                #Вставка порядка
+                # Вставка порядка
                 curr_elif_id = str(self.get_uniq_postfix())
                 root_elif_node = Node(tag=curr_elif_id, identifier=curr_elif_id)
                 if_statement[0].add_node(root_elif_node, if_statement[3])
                 curr_shift = elif_statement[2]
-                #Конец вставки порядка
+                # Конец вставки порядка
 
                 if_statement[0].paste(curr_elif_id, elif_statement[0])
                 elif_statement = self.word_with_bool(curr_shift, tab_count, self.elif_ex, "Elif")
@@ -604,7 +603,7 @@ class Parser:
 
         return if_statement[0], parse_res, curr_shift
 
-    #else
+    # else
     def else_statement(self, shift, tab_count):
         tree = Tree()
         node_id = "Else" + self.get_uniq_postfix()
@@ -615,7 +614,7 @@ class Parser:
                 return tree, False
 
         if self.else_ex(shift)[1]:
-            double_dot = self.double_dot_ex(shift+1)
+            double_dot = self.double_dot_ex(shift + 1)
             if double_dot[1]:
                 statements = self.statements(shift + 2, tab_count + 1)
                 if statements[1]:
@@ -632,7 +631,7 @@ class Parser:
     # statement
     def statement(self, shift, tab_count):
 
-        if shift > len(self.lexs) - 1:
+        if shift > len(self.__lexs) - 1:
             return None, False
 
         if_statement = self.if_statement(shift, tab_count)
@@ -652,7 +651,7 @@ class Parser:
 
         return None, False
 
-    #statements
+    # statements
     def statements(self, shift, tab_count):
 
         tree = Tree()
@@ -677,12 +676,11 @@ class Parser:
             pos += 1
         return tree, res, curr_shift
 
-    #program
+    # program
     def program(self):
         tree = Tree()
         res = False
         curr_shift = 0
-
 
         node_id = "Statements" + self.get_uniq_postfix()
         tree.create_node("Statements", node_id)
@@ -697,10 +695,10 @@ class Parser:
             tree.paste(curr_stm_id, statement[0])
             statement = self.statement(statement[2], 0)
 
-            if not statement[1] and self.lattest_lex_num < len(self.lexs) - 1:
+            if not statement[1] and self.lattest_lex_num < len(self.__lexs) - 1:
                 return tree, False
 
         return tree, res
 
-#Служебные слова
-#Снос следующего выражения
+        # Служебные слова
+        # Снос следующего выражения
