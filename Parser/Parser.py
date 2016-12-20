@@ -674,6 +674,12 @@ class Parser:
             tree.paste(curr_stm_id, statement[0])
             statement = self.statement(statement[2], tab_count)
             pos += 1
+
+            if curr_shift > 0 and curr_shift < len(self.__lexs) and statement[1]:
+                if self.get_lex(statement[2]).line == self.get_lex(statement[2] - 1).line:
+                    print("Ожидался перенос строки после " + str(self.get_lex(statement[2] - 1)))
+                    exit()
+
         return tree, res, curr_shift
 
     # program
@@ -697,7 +703,10 @@ class Parser:
 
             if not statement[1] and self.lattest_lex_num < len(self.__lexs) - 1:
                 return tree, False
-
+            if curr_shift < len(self.__lexs):
+                if self.get_lex(statement[2]).line == self.get_lex(statement[2] - 1).line:
+                    print("Ожидался перенос строки после " + str(self.get_lex(statement[2] - 1)))
+                    exit()
         return tree, res
 
         # Служебные слова
